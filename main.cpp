@@ -34,13 +34,28 @@ void printb(const binary bin){
     std::cout << "\n";
 }
 
+int bin_size(const binary bin){
+    for(int chunk = bin.size()-1; chunk>=0; chunk--){
+
+        if(bin[chunk] != 0){
+            //__builtin_clzll conta quantos zeros há no chunk não significativos
+            return 64*chunk + (64- __builtin_clzll(bin[chunk]));
+        }
+    }
+    return 0;
+}
+
+//plans: divide-and-conquer algorithm
 divby2_results divideby2(std::string& decimal){
     std::string result;
+    result.reserve(decimal.size()); // Evita realocações
     int carry = 0;
-    bool started = false; //ignore zeros to left
-    bool nonzero = false; //ignore zeros to left of the result
+
+    //Buscar o primeiro bit significativo
+    bool started = false; 
+    bool nonzero = false; 
     for(int idx = 0;idx < size(decimal); idx++){
-        int digit = decimal[idx]-48; //48 == '0
+        int digit = decimal[idx]-48; //48 == '0'
         if(!started and digit!=0){
             started = true;
         }
@@ -49,7 +64,7 @@ divby2_results divideby2(std::string& decimal){
             int quocient = value/2;
             carry = value%2;
             if(!nonzero and quocient>0) nonzero = true;
-            if(nonzero) result += std::to_string(quocient);
+            if(nonzero) result += '0' + quocient;
         }
     }
     if(result == "") result = "0";
@@ -57,11 +72,12 @@ divby2_results divideby2(std::string& decimal){
 }
 
 //convert string to binary
-binary dtob(std::string decimal){
+binary dectobin(std::string decimal){
     divby2_results div;
     div.quocient = decimal;
 
     binary bin;
+    set_bin(bin, 0, 0);
     int index = 0;
     while(div.quocient != "0"){
         div = divideby2(div.quocient);
@@ -71,15 +87,49 @@ binary dtob(std::string decimal){
     return bin;
 }
 
-int main(){
-    using std::cout;
-    std::string num = " ";
-    while(num != "0"){
-        std::cin >> num;
-        binary bin = dtob(num);
-        printb(bin);
+//define bin << n
+binary operator<<(binary &bin,const int bits){
+    //error tratament
+    if(bits <= 0) return bin;
+    if(bin.empty()) return bin;
+
+    const int full_chunks = bits / 64; //total full chunks shifted
+    const int shift = bits % 64; //other bits shifted
+
+    //resize bin size
+    bin.resize(bin.size()+full_chunks + (shift > 0 ? 1 : 0), 0);
+
+    for(int chunk = bin.size()-1-full_chunks; chunk >=0; --chunk){
+
+        if(shift >0 and chunk+full_chunks+1 < bin.size() and bin[chunk] >> (64-shift) != 0){
+            bin[chunk+full_chunks+1] |= bin[chunk] >> 64-shift;
+        }
+        bin[chunk+full_chunks] = bin[chunk] << shift;
     }
+    std::fill(bin.begin(), bin.begin()+full_chunks,0);
+    return bin;
+}
+
+binary& operator<<=(binary &bin, const int bits){
+    bin = bin << bits;
+    return bin;
+}
+
+//ignore this part.
+
+/* binary add(binary bin1, binary bin2){
     
-    
+    for(int chunk = bin1.size()-1; chunk >=0; chunk--){
+        
+    }
+    return bin;
+} */
+
+/* std::string bintodec(binary bin){
+    int bsize = bin_size(bin);
+    the maximum of byte we will need
+} */
+
+int main(){
     return 0;
 }
