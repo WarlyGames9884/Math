@@ -11,11 +11,11 @@ struct divby2_results{
 };
 
 //change the bit in index postion to value
-void set_bin(binary& bin, int index, bool value= 0){
-    int chunk = index/64;
+void set_bin(binary& bin, size_t index, bool value= 0){
+    size_t chunk = index/64;
     int bit = index%64;
     if(chunk > (int)bin.size() -1) bin.resize(chunk+1);
-    if(!value) bin[chunk] = ~(1ULL << bit) & bin[chunk]; //value ==0
+    if(!value) bin[chunk] = ~(1ULL << bit) & bin[chunk]; //value == 0
     else bin[chunk] = (1ULL << bit) | bin[chunk]; //value == 1
 }
 
@@ -45,15 +45,15 @@ int bin_size(const binary bin){
     return 0;
 }
 
-//plans: divide-and-conquer algorithm
+//TODO: divide-and-conquer algorithm
 divby2_results divideby2(std::string& decimal){
     std::string result;
     result.reserve(decimal.size()); // Evita realocações
     int carry = 0;
 
     //Buscar o primeiro bit significativo
-    bool started = false; 
-    bool nonzero = false; 
+    bool started = false;
+    bool nonzero = false;
     for(int idx = 0;idx < size(decimal); idx++){
         int digit = decimal[idx]-48; //48 == '0'
         if(!started and digit!=0){
@@ -102,7 +102,7 @@ binary operator<<(binary &bin,const int bits){
     for(int chunk = bin.size()-1-full_chunks; chunk >=0; --chunk){
 
         if(shift >0 and chunk+full_chunks+1 < bin.size() and bin[chunk] >> (64-shift) != 0){
-            bin[chunk+full_chunks+1] |= bin[chunk] >> 64-shift;
+            bin[chunk+full_chunks+1] |= bin[chunk] >> (64 - shift);
         }
         bin[chunk+full_chunks] = bin[chunk] << shift;
     }
@@ -115,21 +115,48 @@ binary& operator<<=(binary &bin, const int bits){
     return bin;
 }
 
-//ignore this part.
-
-/* binary add(binary bin1, binary bin2){
-    
+binary add(binary bin1, binary bin2){
+    if(bin2.size() > bin1.size()) return add(bin2, bin1);
+    binary bin;
+    bin.resize(bin1.size());
+    bin2.resize(bin1.size()-1);
+    int carry = 0;
+    //percorrer cada chunk e fazer operação bit a bit
     for(int chunk = bin1.size()-1; chunk >=0; chunk--){
-        
-    }
-    return bin;
-} */
+        int index = 0;
 
-/* std::string bintodec(binary bin){
-    int bsize = bin_size(bin);
-    the maximum of byte we will need
-} */
+        //adding operation
+        for(;index<64;index++){
+            int bit1 = (bin1[chunk]>>index) & 1;
+            int bit2 = (bin2[chunk]>>index) & 1;
+            int bit = (bit1 ^ bit2) ^carry;
+            carry = (bit1 + bit2 +carry) >> 1;
+
+            if(bit) bin[chunk] = (1ULL << index) | bin[chunk]; //value == 1
+        }
+    }
+    //se houver 1+1 no ultimo bit do ultimo chunk.
+    if(carry) bin[bin1.size()] = 1;
+    return bin;
+}
+
+std::string bintodec(binary bin){
+    /*
+    Transform a binary number into a decimal number.
+
+    */
+    for(int chunk = bin.size() - 1; chunk>=0; chunk--){
+
+    }
+}
 
 int main(){
-    return 0;
+    // binary bin1 = dectobin("2000000000000000000");
+    // binary bin2 = dectobin("29");
+    // binary bin = add(bin1, bin2);
+    // printb(bin1);
+    // printb(bin2);
+    // printb(bin);
+    //std::cout << bin[0] << "\n";
+    // return 0;
 }
